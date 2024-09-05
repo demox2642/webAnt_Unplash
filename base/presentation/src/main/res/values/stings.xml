@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_def_title">Sorry!</string>
+    <string name="error_def">There is no pictures./nPleace come back later.</string>
+    <string name="load">Loading...</string>
+    <string name="close">Close</string>
+</resources>
