@@ -55,40 +55,45 @@ class PopularPhotoMediator(
                 }
 
             val response =
-                try {
-                    homeService.getPhotoList(
-                        page = currentPage,
-                        perPage = PagingConst.PAGE_SIZE,
-                        orderBy = Order.POPULAR.order,
-                    )
-                } catch (e: Exception) {
-                    popularPhotoError(e)
-                    emptyList()
-                }
+                homeService.getPhotoList(
+                    page = currentPage,
+                    perPage = PagingConst.PAGE_SIZE,
+                    orderBy = Order.LATEST.order,
+                )
 
-            val endOfPaginationReached = response.isEmpty()
+            if (response.isSuccessful.not()) {
+                popularPhotoError(Exception(response.message()))
+            }
+
+            val endOfPaginationReached = response.body().isNullOrEmpty()
 
             val prevPage = if (currentPage == 1) null else currentPage - 1
             val nextPage = if (endOfPaginationReached) null else currentPage + 1
 
-            if (loadType == LoadType.REFRESH) {
+            if (loadType == LoadType.REFRESH && response.isSuccessful) {
                 popularPhotoDao.deleteAllPopularPhoto()
                 popularPhotoRemoteKeyDao.deleteAllPopularPhotoKey()
             }
-            val keys =
-                response.map { photo ->
-                    PopularPhotoRemoteKeys(
-                        id = photo.id,
-                        prevPage = prevPage,
-                        nextPage = nextPage,
-                    )
+            if (response.isSuccessful) {
+                response.body().let { data ->
+                    data?.let { list ->
+                        val keys =
+                            list.map { photo ->
+                                PopularPhotoRemoteKeys(
+                                    id = photo.id,
+                                    prevPage = prevPage,
+                                    nextPage = nextPage,
+                                )
+                            }
+                        popularPhotoRemoteKeyDao.addAllPopularPhotoKey(remoteKeys = keys)
+                        val users = data.map { it.user.toUserDB() }
+                        userDao.addAllUser(users)
+                        val photos = list.map { it.toPopularPhotoDB() }
+                        popularPhotoDao.addAllPopularPhoto(popularPhotoList = photos)
+                    }
                 }
+            }
 
-            popularPhotoRemoteKeyDao.addAllPopularPhotoKey(remoteKeys = keys)
-            val users = response.map { it.user.toUserDB() }
-            userDao.addAllUser(users)
-            val photos = response.map { it.toPopularPhotoDB() }
-            popularPhotoDao.addAllPopularPhoto(popularPhotoList = photos)
             MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
         } catch (e: Exception) {
             popularPhotoError(e)

@@ -1,5 +1,6 @@
 package com.example.presentation.main
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,6 +26,7 @@ import com.bumptech.glide.load.Key
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.signature.ObjectKey
 import com.example.domain.models.PhotoPresentation
+import com.example.domain.models.PhotoTableName
 import com.example.presentation.theme.AppTheme
 import com.example.presentation.view.ErrorView
 import com.example.presentation.view.ScreenState
@@ -38,6 +40,7 @@ fun NewPhotoContent(
     newPhotoList: LazyPagingItems<PhotoPresentation>,
     updateNewPhoto: () -> Unit,
     newPhotoScreenState: ScreenState,
+    toDetail: (String, PhotoTableName) -> Unit,
 ) {
     SwipeRefresh(
         modifier = Modifier.fillMaxSize(),
@@ -76,7 +79,8 @@ fun NewPhotoContent(
                                     modifier =
                                         Modifier
                                             .clip(RoundedCornerShape(10.dp))
-                                            .size(156.dp),
+                                            .size(156.dp)
+                                            .clickable { toDetail(photo.id, PhotoTableName.New) },
                                     model = photo.url,
                                     contentScale = ContentScale.Crop,
                                     contentDescription = "",

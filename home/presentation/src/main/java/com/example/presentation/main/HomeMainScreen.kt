@@ -25,7 +25,9 @@ import androidx.navigation.NavHostController
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.domain.models.PhotoPresentation
+import com.example.domain.models.PhotoTableName
 import com.example.home.presentation.R
+import com.example.presentation.HomeScreens
 import com.example.presentation.theme.AppTheme
 import com.example.presentation.view.AlertDialog
 import com.example.presentation.view.ScreenState
@@ -51,6 +53,9 @@ fun HomeMainScreen(navController: NavHostController) {
         popularPhotoScreenState = popularPhotoScreenState,
         errorState = errorState,
         closeErrorDialog = viewModel::cleanError,
+        toDetail = { id, table ->
+            navController.navigate(HomeScreens.HomeDetailScreen.route + "/$id" + "/$table")
+        },
     )
 }
 
@@ -65,6 +70,7 @@ fun HomeMainContent(
     popularPhotoScreenState: ScreenState,
     errorState: Exception?,
     closeErrorDialog: () -> Unit,
+    toDetail: (String, PhotoTableName) -> Unit,
 ) {
     val loading = newPhotoScreenState == ScreenState.Loading
     Scaffold { paging ->
@@ -132,6 +138,7 @@ fun HomeMainContent(
                             newPhotoList = newPhotoList,
                             updateNewPhoto = updateNewPhoto,
                             newPhotoScreenState = newPhotoScreenState,
+                            toDetail = toDetail,
                         )
 
                     1 ->
@@ -139,6 +146,7 @@ fun HomeMainContent(
                             popularPhotoList = popularPhotoList,
                             updatePopularPhoto = updatePopularPhoto,
                             popularPhotoScreenState = popularPhotoScreenState,
+                            toDetail = toDetail,
                         )
                 }
             }

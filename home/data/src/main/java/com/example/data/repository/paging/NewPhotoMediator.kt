@@ -57,39 +57,47 @@ class NewPhotoMediator(
                 }
 
             val response =
-                try {
-                    homeService.getPhotoList(
-                        page = currentPage,
-                        perPage = PagingConst.PAGE_SIZE,
-                        orderBy = Order.LATEST.order,
-                    )
-                } catch (e: Exception) {
-                    newPhotoError(e)
-                    emptyList()
+                homeService.getPhotoList(
+                    page = currentPage,
+                    perPage = PagingConst.PAGE_SIZE,
+                    orderBy = Order.LATEST.order,
+                )
+
+            if (response.isSuccessful.not())
+                {
+                    newPhotoError(Exception(response.message()))
                 }
 
-            val endOfPaginationReached = response.isEmpty()
+            val endOfPaginationReached = response.body().isNullOrEmpty()
 
             val prevPage = if (currentPage == 1) null else currentPage - 1
             val nextPage = if (endOfPaginationReached) null else currentPage + 1
 
-            if (loadType == LoadType.REFRESH) {
+            if (loadType == LoadType.REFRESH && response.isSuccessful) {
                 newPhotoDao.deleteNewPhoto()
                 newPhotoRemoteKeysDao.deleteAllNewPhotoRemote()
             }
-            val keys =
-                response.map { photo ->
-                    NewPhotoRemoteKeys(
-                        id = photo.id,
-                        prevPage = prevPage,
-                        nextPage = nextPage,
-                    )
+            if (response.isSuccessful)
+                {
+                    response.body().let { data ->
+                        data?.let { list ->
+                            val keys =
+                                list.map { photo ->
+                                    NewPhotoRemoteKeys(
+                                        id = photo.id,
+                                        prevPage = prevPage,
+                                        nextPage = nextPage,
+                                    )
+                                }
+                            newPhotoRemoteKeysDao.addAllNewPhotoRemote(remoteKeys = keys)
+                            val users = data.map { it.user.toUserDB() }
+                            userDao.addAllUser(users)
+                            val photos = list.map { it.toPhotoDB() }
+                            newPhotoDao.addAllNewPhoto(newPhotoList = photos)
+                        }
+                    }
                 }
-            newPhotoRemoteKeysDao.addAllNewPhotoRemote(remoteKeys = keys)
-            val users = response.map { it.user.toUserDB() }
-            userDao.addAllUser(users)
-            val photos = response.map { it.toPhotoDB() }
-            newPhotoDao.addAllNewPhoto(newPhotoList = photos)
+
             MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
         } catch (e: Exception) {
             newPhotoError(e)

@@ -101,4 +101,5 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.logging.interceptor)
     implementation(libs.accompanist.systemuicontroller)
+    implementation("androidx.core:core-splashscreen:1.0.0")
 }
