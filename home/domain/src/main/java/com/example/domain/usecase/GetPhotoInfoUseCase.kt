@@ -17,7 +17,10 @@ class GetPhotoInfoUseCase(
                 homeRepository.getNewPhotoInfo(photoId)
             }
             PhotoTableName.Popular -> {
-                homeRepository.getPoularPhotoInfo(photoId)
+                homeRepository.getPopularPhotoInfo(photoId)
+            }
+            PhotoTableName.Search -> {
+                homeRepository.getSearchPhotoInfo(photoId)
             }
         }
 }

@@ -1,7 +1,6 @@
 package com.example.data.repository
 
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.paging.ExperimentalPagingApi
 import androidx.paging.Pager
@@ -14,6 +13,7 @@ import com.example.data.models.toPhotoDetail
 import com.example.data.repository.paging.NewPhotoMediator
 import com.example.data.repository.paging.PagingConst.PAGE_SIZE
 import com.example.data.repository.paging.PopularPhotoMediator
+import com.example.data.repository.paging.SearchPhotoPagingSource
 import com.example.data.service.HomeService
 import com.example.domain.models.PhotoDetail
 import com.example.domain.models.PhotoPresentation
@@ -64,7 +64,6 @@ class HomeRepositoryImpl
                     ),
                 remoteMediator = NewPhotoMediator(homeService, unsplashDatabase, newPhotoError),
             ) {
-                Log.e("HomeRepositoryImpl", "Load from DB")
                 unsplashDatabase.newPhotoDao().getAllImages()
             }.flow
                 .map { pagingData ->
@@ -83,8 +82,34 @@ class HomeRepositoryImpl
                 emit(unsplashDatabase.newPhotoDao().getNewPhoto(photoId).toPhotoDetail())
             }.flowOn(Dispatchers.IO)
 
-        override suspend fun getPoularPhotoInfo(photoId: String): Flow<PhotoDetail> =
+        override suspend fun getPopularPhotoInfo(photoId: String): Flow<PhotoDetail> =
             flow {
                 emit(unsplashDatabase.popularPhotoDao().getPopularPhoto(photoId).toPhotoDetail())
             }.flowOn(Dispatchers.IO)
+
+        @RequiresApi(Build.VERSION_CODES.O)
+        override suspend fun getSearchPhotoInfo(photoId: String): Flow<PhotoDetail> =
+            flow {
+                emit(homeService.getPhotoInfo(id = photoId).toPhotoDetail())
+            }.flowOn(Dispatchers.IO)
+
+        override suspend fun searchPhotos(
+            searchText: String,
+            searchError: (Exception) -> Unit,
+        ): Flow<PagingData<PhotoPresentation>> =
+            Pager(
+                config =
+                    PagingConfig(
+                        pageSize = PAGE_SIZE,
+                        enablePlaceholders = false,
+                        prefetchDistance = 1,
+                    ),
+                pagingSourceFactory = {
+                    SearchPhotoPagingSource(
+                        searchText = searchText,
+                        homeService = homeService,
+                        popularPhotoError = searchError,
+                    )
+                },
+            ).flow.flowOn(Dispatchers.IO)
     }

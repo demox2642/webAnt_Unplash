@@ -5,6 +5,8 @@ import androidx.annotation.RequiresApi
 import com.example.data.database.models.NewPhotoDB
 import com.example.data.database.models.PopularPhotoDB
 import com.example.data.ext.toDataTime
+import com.example.data.ext.toDateTime
+import com.example.domain.models.PhotoDetail
 import com.example.domain.models.PhotoPresentation
 import com.google.gson.annotations.SerializedName
 import java.time.ZoneOffset
@@ -45,4 +47,20 @@ fun Photo.toPopularPhotoDB() =
         createDataTime = this.createDataTime.toDataTime().toEpochSecond(ZoneOffset.UTC),
         userId = this.user.id,
         description = this.description,
+    )
+
+@RequiresApi(Build.VERSION_CODES.O)
+fun Photo.toPhotoDetail() =
+    PhotoDetail(
+        id = this.id,
+        url = this.urls.small,
+        createDataTime =
+            this.createDataTime
+                .toDataTime()
+                .toEpochSecond(ZoneOffset.UTC)
+                .toDateTime(),
+        description = this.description,
+        username = this.user.username,
+        name = this.user.name,
+        bio = this.user.bio,
     )

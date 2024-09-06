@@ -6,15 +6,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -34,7 +35,6 @@ import com.example.presentation.view.ScreenState
 import com.example.presentation.view.TabPager
 import com.google.accompanist.pager.ExperimentalPagerApi
 
-@OptIn(ExperimentalPagerApi::class)
 @Composable
 fun HomeMainScreen(navController: NavHostController) {
     val viewModel: HomeMainViewModel = hiltViewModel()
@@ -43,6 +43,9 @@ fun HomeMainScreen(navController: NavHostController) {
     val newPhotoScreenState by viewModel.newPhotoScreenState.collectAsState()
     val popularPhotoScreenState by viewModel.popularPhotoScreenState.collectAsState()
     val errorState by viewModel.errorState.collectAsState()
+    val searchText by viewModel.searchText.collectAsState()
+    val searchPhotoScreenState by viewModel.searchPhotoScreenState.collectAsState()
+    val searchPhotoList = viewModel.searchPhotoList.collectAsLazyPagingItems()
 
     HomeMainContent(
         popularPhotoList = popularPhotoList,
@@ -56,6 +59,10 @@ fun HomeMainScreen(navController: NavHostController) {
         toDetail = { id, table ->
             navController.navigate(HomeScreens.HomeDetailScreen.route + "/$id" + "/$table")
         },
+        searchText = searchText,
+        searchPhotoScreenState = searchPhotoScreenState,
+        searchPhotoList = searchPhotoList,
+        changeSearchText = viewModel::search,
     )
 }
 
@@ -71,11 +78,14 @@ fun HomeMainContent(
     errorState: Exception?,
     closeErrorDialog: () -> Unit,
     toDetail: (String, PhotoTableName) -> Unit,
+    searchText: String,
+    searchPhotoScreenState: ScreenState,
+    searchPhotoList: LazyPagingItems<PhotoPresentation>,
+    changeSearchText: (String) -> Unit,
 ) {
     val loading = newPhotoScreenState == ScreenState.Loading
     Scaffold { paging ->
         Column {
-            val searchText = remember { mutableStateOf("") }
             if (errorState != null) {
                 AlertDialog(message = errorState.message.toString(), closeDialog = closeErrorDialog)
             }
@@ -85,7 +95,7 @@ fun HomeMainContent(
                     Modifier
                         .padding(horizontal = 16.dp, vertical = 10.dp)
                         .fillMaxWidth(),
-                value = searchText.value,
+                value = searchText,
                 maxLines = 1,
                 leadingIcon = {
                     Icon(
@@ -98,8 +108,12 @@ fun HomeMainContent(
                         tint = Color(0xFF7A7A7E),
                     )
                 },
-                onValueChange = { searchText.value = it },
-                enabled = false,
+                trailingIcon = {
+                    IconButton(onClick = { changeSearchText("") }) {
+                        Icon(Icons.Default.Clear, contentDescription = "clear", tint = Color(0xFF7A7A7E))
+                    }
+                },
+                onValueChange = { changeSearchText(it) },
                 shape = RoundedCornerShape(28.dp),
                 placeholder = {
                     Text(
@@ -113,6 +127,7 @@ fun HomeMainContent(
                 colors =
                     OutlinedTextFieldDefaults.colors(
                         unfocusedBorderColor = AppTheme.colors.white,
+                        focusedBorderColor = AppTheme.colors.white,
                         disabledBorderColor = AppTheme.colors.white,
                         disabledContainerColor = AppTheme.colors.grayLight,
                         focusedContainerColor = AppTheme.colors.grayLight,
@@ -120,35 +135,39 @@ fun HomeMainContent(
                     ),
             )
 
-            TabPager(
-                modifier =
-                    Modifier
-                        .padding(paging)
-                        .padding(horizontal = 16.dp),
-                tabs =
-                    listOf(
-                        stringResource(R.string.tab_new) to 0,
-                        stringResource(R.string.tab_popular) to 1,
-                    ),
-                loading = loading,
-            ) {
-                when (it) {
-                    0 ->
-                        NewPhotoContent(
-                            newPhotoList = newPhotoList,
-                            updateNewPhoto = updateNewPhoto,
-                            newPhotoScreenState = newPhotoScreenState,
-                            toDetail = toDetail,
-                        )
+            if (searchText.isEmpty()) {
+                TabPager(
+                    modifier =
+                        Modifier
+                            .padding(paging)
+                            .padding(horizontal = 16.dp),
+                    tabs =
+                        listOf(
+                            stringResource(R.string.tab_new) to 0,
+                            stringResource(R.string.tab_popular) to 1,
+                        ),
+                    loading = loading,
+                ) {
+                    when (it) {
+                        0 ->
+                            NewPhotoContent(
+                                newPhotoList = newPhotoList,
+                                updateNewPhoto = updateNewPhoto,
+                                newPhotoScreenState = newPhotoScreenState,
+                                toDetail = toDetail,
+                            )
 
-                    1 ->
-                        PopularPhotoContent(
-                            popularPhotoList = popularPhotoList,
-                            updatePopularPhoto = updatePopularPhoto,
-                            popularPhotoScreenState = popularPhotoScreenState,
-                            toDetail = toDetail,
-                        )
+                        1 ->
+                            PopularPhotoContent(
+                                popularPhotoList = popularPhotoList,
+                                updatePopularPhoto = updatePopularPhoto,
+                                popularPhotoScreenState = popularPhotoScreenState,
+                                toDetail = toDetail,
+                            )
+                    }
                 }
+            } else {
+                SearchScreenContent(searchPhotoScreenState = searchPhotoScreenState, searchPhotoList = searchPhotoList, toDetail = toDetail)
             }
         }
     }

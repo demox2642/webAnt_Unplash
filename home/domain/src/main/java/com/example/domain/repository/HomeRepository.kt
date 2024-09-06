@@ -12,5 +12,12 @@ interface HomeRepository {
 
     suspend fun getNewPhotoInfo(photoId: String): Flow<PhotoDetail>
 
-    suspend fun getPoularPhotoInfo(photoId: String): Flow<PhotoDetail>
+    suspend fun getPopularPhotoInfo(photoId: String): Flow<PhotoDetail>
+
+    suspend fun getSearchPhotoInfo(photoId: String): Flow<PhotoDetail>
+
+    suspend fun searchPhotos(
+        searchText: String,
+        searchError: (Exception) -> Unit,
+    ): Flow<PagingData<PhotoPresentation>>
 }

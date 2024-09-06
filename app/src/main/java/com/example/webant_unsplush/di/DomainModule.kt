@@ -4,6 +4,7 @@ import com.example.domain.repository.HomeRepository
 import com.example.domain.usecase.GetNewPhotoUseCase
 import com.example.domain.usecase.GetPhotoInfoUseCase
 import com.example.domain.usecase.GetPopularPhotoUseCase
+import com.example.domain.usecase.SearchPhotoUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -20,4 +21,7 @@ class DomainModule {
 
     @Provides
     fun provideGetNewPhotoUseCase(homeRepository: HomeRepository) = GetNewPhotoUseCase(homeRepository)
+
+    @Provides
+    fun provideSearchPhotoUseCase(homeRepository: HomeRepository) = SearchPhotoUseCase(homeRepository)
 }
